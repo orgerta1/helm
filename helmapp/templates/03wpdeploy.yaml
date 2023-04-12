@@ -1,0 +1,71 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.wpservice.name }}
+  namespace: {{ .Values.namespace1 }}
+  labels:
+    app: {{ .Values.appName1 }}
+spec:
+  ports:
+    - port: {{ .Values.wpservice.port }}
+  selector:
+    app: {{ .Values.appName1 }}
+    tier: {{ .Values.tier_wp }}
+  type: {{ .Values.wpservice.type }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.pvc_wp.name }}
+  namespace: {{ .Values.namespace1 }}
+  labels:
+    app: {{ .Values.appName1 }}
+spec:
+  storageClassName: "{{ .Values.pvc_wp.storageClassName }}"
+  accessModes:
+    - {{ .Values.pvc_wp.accessModes }}
+  resources:
+    requests:
+      storage: {{ .Values.pvc_wp.storage }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.appName1 }}
+  namespace: {{ .Values.namespace1 }}
+  labels:
+    app: {{ .Values.appName1 }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.appName1 }}
+      tier: {{ .Values.tier_wp }}
+  strategy:
+    type: {{ .Values.strategy.type }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.appName1 }}
+        tier: {{ .Values.tier_wp }}
+    spec:
+      containers:
+      - image: {{ .Values.imagewp }}:{{ .Values.tagwp }}
+        name: {{ .Values.appName1 }}
+        env:
+        - name: {{ .Values.wpenv.user_name }}
+          value: {{ .Values.mysqlservice.name }}.{{ .Values.namespace2 }}
+        - name: {{ .Values.wpenv.pass_name }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.wpsecret.name }}
+              key: {{ .Values.wpsecret.data.firstkey.name }}
+        ports:
+        - containerPort: {{ .Values.containerport }}
+          name: {{ .Values.appName1 }}
+        volumeMounts:
+        - name: {{ .Values.volumeMounts.name }}
+          mountPath: {{ .Values.volumeMounts.mountPath }}
+      volumes:
+      - name: {{ .Values.volumeMounts.name }}
+        persistentVolumeClaim:
+          claimName: {{ .Values.pvc_wp.name }}

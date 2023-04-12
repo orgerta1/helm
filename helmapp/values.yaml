@@ -1,0 +1,78 @@
+#WORDPRESS
+namespace1: web
+appName1: wordpress
+
+tier_wp: frontend
+
+strategy:
+  type: Recreate
+
+imagewp: orgerta/wp2
+tagwp: latest
+
+#for both mysql and wordpress secrets
+secret_type: Opaque
+
+wpservice:
+  name: wordpress
+  port: 80
+  type: LoadBalancer
+containerport: 80
+
+wpsecret:
+  name: wordpress-secret
+  data: 
+    firstkey:
+        name: password
+        value: b3JnZXJ0YTIx
+
+pvc_wp:
+  name: wp-pv-claim
+  storageClassName: "standard"
+  accessModes: ReadWriteOnce
+  storage: 2Gi
+
+volumeMounts:
+  name: wordpress-persistent-storage
+  mountPath: /var/www/html
+
+wpenv:
+  user_name: WORDPRESS_DB_HOST
+  pass_name: WORDPRESS_DB_PASSWORD
+
+
+#MYSQL
+namespace2: database
+appName2: mysql
+
+imagemysql: mysql
+tagmysql: 5.7
+
+mysql:
+  port: 3306
+  containerport: 3306
+
+
+mysqlservice:
+  name: wordpress-mysql
+clusterIPtype: None
+
+mysqlenv:
+  name: MYSQL_ROOT_PASSWORD
+
+mysqlsecret:
+  name: mysql-secret
+  data: 
+    firstkey:
+        name: password
+        value: b3JnZXJ0YTIx
+
+pvc_mysql:
+  name: mysql-pv-claim
+  storageClassName: "standard"
+  accessModes: ReadWriteOnce
+  storage: 4Gi
+
+MYSQLvolumeMounts:
+  name: mysql-persistent-storage
+  mountPath: /var/lib/mysql

@@ -1,0 +1,69 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.pvc_mysql.name }}
+  namespace: {{ .Values.namespace2 }}
+  labels:
+    app: {{ .Values.appName1 }}
+spec:
+  storageClassName: "{{ .Values.pvc_mysql.storageClassName }}"
+  accessModes:
+    - {{ .Values.pvc_mysql.accessModes }}
+  resources:
+    requests:
+      storage: {{ .Values.pvc_mysql.storage }}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Values.appName2 }}
+  namespace: {{ .Values.namespace2 }}
+  labels:
+    app: {{ .Values.appName1 }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.appName1 }}
+      tier: {{ .Values.appName2 }}
+  serviceName: "{{ .Values.mysqlservice.name }}"
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.appName1 }}
+        tier: {{ .Values.appName2 }}
+    spec:
+      containers:
+      - image: {{ .Values.imagemysql }}:{{ .Values.tagmysql }}
+        name: {{ .Values.appName2 }}
+        env:
+        - name: {{ .Values.mysqlenv.name }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.mysqlsecret.name }}
+              key: {{ .Values.mysqlsecret.data.firstkey.name }}
+        ports:
+        - containerPort: {{ .Values.mysql.containerport }}
+          name: {{ .Values.appName2 }}
+        volumeMounts:
+        - name: {{ .Values.MYSQLvolumeMounts.name }}
+          mountPath: {{ .Values.MYSQLvolumeMounts.mountPath }}
+      volumes:
+      - name: {{ .Values.MYSQLvolumeMounts.name }}
+        persistentVolumeClaim:
+          claimName: {{ .Values.pvc_mysql.name }}
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.mysqlservice.name }}
+  namespace: {{ .Values.namespace2 }}
+  labels:
+    app: {{ .Values.appName1 }}
+spec:
+  ports:
+    - port: {{ .Values.mysql.port }}
+  selector:
+    app: {{ .Values.appName1 }}
+    tier: {{ .Values.appName2 }}
+  clusterIP: {{ .Values.clusterIPtype }}
